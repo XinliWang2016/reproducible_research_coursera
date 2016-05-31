@@ -1,0 +1,90 @@
+---
+title: "PA1_template"
+author: "Xinli"
+date: "May 30, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+* Loading and preprocessing the data
+
+```{r}
+setwd("~/Desktop/reproducible_research_coursera")
+dat <- read.csv("activity.csv")
+dat$date <- as.Date(dat$date, format="%Y-%m-%d")
+```
+
+* What is mean total number of steps taken per day
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+total_steps <- dat %>% group_by(date) %>%summarize(total_steps=sum(steps, na.rm=T))
+```
+
+```{r, fig.height=4, fig.width=5}
+hist(total_steps$total_steps, breaks=30,main = "Total number of steps taken per day", xlab = "total steps")
+mean <- mean(total_steps$total_steps, na.rm = T)
+mean
+med <- median(total_steps$total_steps, na.rm = T)
+med
+```
+
+So the mean of the total number of steps taken per day is `r mean`, median is `r med`. 
+
+* What is the average daily activity patter?
+
+```{r,fig.height=4, fig.width=5}
+average_interval <- dat %>% group_by(interval) %>% summarize(average=mean(steps,na.rm=T))
+plot(average_interval$interval, average_interval$average, type = 'l', xlab = "5-minute interval", ylab="average number of steps taken", main = "Time Series Plot")
+maximum = which.max(average_interval$average)
+average_interval[maximum, ]
+```
+
+On average across all the days in the dataset, interval `r average_interval[maximum, ][1]` contains the maximum nnumber of steps, which is `average_interval[maximum, ][2]`. 
+
+* Imputing missing values
+
+```{r}
+total_missing <- sum(is.na(dat$steps))
+total_missing
+```
+
+So the total number of missing values in the dataset is `r total_missing`.
+
+Filling in the missing values using mean for that 5-minute interval.
+
+```{r}
+combined <- merge(dat, average_interval, by="interval", all.x = T)
+combined$steps <- ifelse(is.na(combined$steps), combined$average, combined$steps)
+dat.1 <- combined[,1:3]
+```
+
+```{r, fig.height=4, fig.width=5}
+total_steps.1 <- dat.1 %>% group_by(date) %>% summarise(total=sum(steps))
+hist(total_steps.1$total,breaks = 30, main = "Total number of steps taken per day",xlab = "total steps")
+mean.1 <-mean(total_steps.1$total)
+med.1 <- median(total_steps.1$total)
+```
+
+After imputing missing values using means of 5-minute intervals, the mean of total number of steps taken per day in new dataset is `r format(mean.1, digits=2)`, the median is `r format(med.1, digits=2)`. 
+
+The impact of imputing missing data on the estimates of the total daily number of steps is the mean of total number of steps equals to the median.
+
+* Are there differences in activity patterns between weekdays and weekends?
+
+```{r,fig.height=4, fig.width=5}
+dat.1$weekday <- weekdays(dat.1$date)
+dat.1$weektype <- ifelse(dat.1$weekday %in% c("Saturday", "Sunday"), "weekend", "weekday")
+average_steps <- dat.1 %>% group_by(weektype, interval) %>%
+    summarize(average=mean(steps))
+library(ggplot2)
+p <- ggplot(average_steps, aes(x=interval,y=average,color=weektype))+
+    geom_line()+
+    facet_wrap(~weektype,ncol = 1, nrow = 2)
+p
+```
+
+
