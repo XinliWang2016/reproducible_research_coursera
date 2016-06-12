@@ -1,4 +1,7 @@
-# reproducible research coursera project I
+# reproducible research coursera project I & II
+
+## Project I
+
 
 ## Loading and preprocessing the data
 
@@ -35,3 +38,9 @@ For this part the `weekdays()` function may be of some help here. Use the datase
 
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 2. Make a panel plot containing a time series plot (i.e. `type="l"`) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+## Project II
+
+Description of [project](https://www.coursera.org/learn/reproducible-research/peer/OMZ37/course-project-2)
+
+The published [Analysis](http://rpubs.com/Effy2016/188894)
