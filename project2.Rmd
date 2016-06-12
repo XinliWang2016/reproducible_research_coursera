@@ -1,0 +1,102 @@
+---
+title: "Fatalities, Injuries, Property Damage from Severe Weather"
+author: "Xinli"
+date: "June 7, 2016"
+output: html_document
+---
+
+# Synopsis
+
+Using U.S. National Oceanic and Atmospheric Administration's (NOAA) storm data to analyze fatalities, injuries and property damage caused by stroms and other severe weather events in U.S..
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Processing
+
+Data is downloaded from [link](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+
+Documentation of data is provided by [National Weather Service](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+```{r,echo=TRUE}
+setwd("~/Desktop")
+datFileName <- "./repdata-data-StormData.csv.bz2"
+if(!file.exists(datFileName)){
+    url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(url=url, destfile = datFileName)
+}
+dat <- read.csv("repdata-data-StormData.csv.bz2")
+```
+
+```{r, message=FALSE,echo=TRUE}
+library(dplyr)
+fatal <- dat %>% group_by(EVTYPE) %>% 
+    summarize(fatal_total=sum(FATALITIES)) %>% arrange(desc(fatal_total))
+injury <- dat %>% group_by(EVTYPE) %>%
+    summarize(injury_total=sum(INJURIES)) %>% arrange(desc(injury_total))
+```
+
+```{r}
+magnitude <- function(dem,exp){
+    amount <- 0
+    if (exp=='K'| exp=='k'){amount=dem*1000}
+    else if (exp=='M'|exp=='m'){amount=dem*1000000}
+    else if (exp=='B'){amount=dem*1000000000}
+    return(amount)
+}
+dat_subset <- 
+    subset(dat, PROPDMG>0|CROPDMG>0)[c("EVTYPE","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+
+dat_subset$total_loss <- 
+with(dat_subset,
+     mapply(magnitude,PROPDMG,PROPDMGEXP)+mapply(magnitude,CROPDMG,CROPDMGEXP))
+damage <- dat_subset %>% group_by(EVTYPE) %>%
+    summarize(total_damage=sum(total_loss)) %>%
+    arrange(desc(total_damage))
+```
+
+## Results
+
+```{r, echo=TRUE, message=FALSE,fig.height=3,fig.width=6}
+library(ggplot2)
+p<-ggplot(as.data.frame(fatal[1:5,]), aes(x=EVTYPE,y=fatal_total))+
+    geom_bar(stat="identity",fill="aquamarine1")+
+    coord_cartesian(ylim = c(0, 6000))+
+    geom_text(aes(label = fatal_total), vjust = -0.3, size = 3.5)+
+    xlab("type of events")+
+    ylab("total fatal amount")+
+    ggtitle("Total Fatal by Severe Weather Events")
+p
+```
+
+From barplot, tornado causes most fatal. The rest is excessive heat, flash flood, heat and lighting.
+
+```{r, echo=TRUE, fig.height=3,fig.width=6}
+p<-ggplot(as.data.frame(injury[1:5,]), aes(x=EVTYPE,y=injury_total))+
+    geom_bar(stat="identity",fill="#E46726")+
+    coord_cartesian(ylim = c(0, 100000))+
+    geom_text(aes(label = injury_total), vjust = -0.3, size = 3.5)+
+    xlab("type of events")+
+    ylab("total injuries amount")+
+    ggtitle("Total Injuries by Severe Weather Events")
+p
+```
+
+From above barplot, tornado causes most injuries. The rest is tstm wind, flood, excessive heat and lighting.
+
+From fatal and injury data, tornado is the most harmful with respect to population health.
+
+```{r}
+damage$total_damage <- damage$total_damage / 10^6
+p<-ggplot(as.data.frame(damage[1:5,]), aes(x=EVTYPE,y=total_damage))+
+    geom_bar(stat="identity",fill="steelblue")+
+    coord_cartesian(ylim = c(0, 160000))+
+    geom_text(aes(label = total_damage), vjust = -0.3, size = 3.5)+
+    xlab("type of events")+
+    ylab("total property damage (Million)")+
+    ggtitle("Total Property Damage by Severe Weather Events")
+p
+```
+
+From above barplot, flood causes most property damages. That is to say, flood has the greates economic consequences.
